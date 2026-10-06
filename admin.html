@@ -26,6 +26,41 @@ h1 small{display:block;font-size:.72rem;color:#999;font-weight:500;margin-top:3p
 .login-box .erro{color:var(--vermelho);font-size:.78rem;margin-top:8px;display:none;font-weight:600}
 .login-box .dica{font-size:.7rem;color:#aaa;margin-top:12px}
 
+/* MODAL DE CONFIRMACAO */
+.modal-conf{
+  display:none;position:fixed;inset:0;background:rgba(45,20,32,.6);
+  z-index:2000;justify-content:center;align-items:center;padding:20px;
+  backdrop-filter:blur(4px)
+}
+.modal-conf.ativo{display:flex}
+.modal-conf .caixa{
+  background:white;border-radius:20px;padding:26px 22px;max-width:420px;width:100%;
+  box-shadow:0 16px 60px rgba(0,0,0,.3);text-align:center;
+  animation:subirConf .22s ease
+}
+@keyframes subirConf{from{transform:translateY(14px);opacity:.6}to{transform:translateY(0);opacity:1}}
+.modal-conf .icone{font-size:2.4rem;margin-bottom:8px}
+.modal-conf h3{font-size:1.15rem;color:#2D2D2D;margin-bottom:10px;font-weight:800}
+.modal-conf .detalhe{
+  background:#FDF7FA;border-radius:12px;padding:13px 15px;margin:12px 0;
+  font-size:.82rem;text-align:left;line-height:1.65;color:#555
+}
+.modal-conf .detalhe strong{color:#2D2D2D}
+.modal-conf .alerta{
+  background:#FFF5F5;border:1px solid #F5C6C6;border-radius:10px;
+  padding:10px 13px;margin:10px 0;font-size:.78rem;color:#C0392B;
+  text-align:left;line-height:1.55;font-weight:600
+}
+.modal-conf .botoes{display:flex;gap:10px;margin-top:16px}
+.modal-conf button{
+  flex:1;padding:13px;border:none;border-radius:12px;font-weight:800;
+  font-size:.86rem;cursor:pointer;font-family:inherit;transition:.2s
+}
+.modal-conf .btn-cancelar{background:#F0F0F0;color:#555}
+.modal-conf .btn-cancelar:hover{background:#E2E2E2}
+.modal-conf .btn-perigo{background:#E05252;color:white}
+.modal-conf .btn-perigo:hover{background:#C0392B;transform:translateY(-1px)}
+
 /* DASHBOARD */
 .dashboard{display:none;padding-bottom:44px}
 .stats{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;background:white;border-radius:14px;padding:15px;box-shadow:0 3px 14px rgba(0,0,0,.05)}
@@ -293,6 +328,19 @@ h1 small{display:block;font-size:.72rem;color:#999;font-weight:500;margin-top:3p
   </div>
 </div>
 
+<div class="modal-conf" id="modal-conf">
+  <div class="caixa">
+    <div class="icone" id="conf-icone">&#x26A0;&#xFE0F;</div>
+    <h3 id="conf-titulo">Tem certeza?</h3>
+    <div class="detalhe" id="conf-detalhe"></div>
+    <div class="alerta" id="conf-alerta" style="display:none"></div>
+    <div class="botoes">
+      <button class="btn-cancelar" type="button" id="conf-nao">Cancelar</button>
+      <button class="btn-perigo" type="button" id="conf-sim">Sim, liberar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 </div>
@@ -552,15 +600,83 @@ function confirmarPagamento(n){
   });
 }
 
+/* ============================================================
+   CONFIRMACAO VISUAL (modal)
+   ============================================================ */
+var _confAcao = null;     /* funcao a executar se confirmar */
+
+function pedirConfirmacao(opcoes){
+  $("conf-icone").innerHTML = opcoes.icone || "&#x26A0;&#xFE0F;";
+  $("conf-titulo").textContent = opcoes.titulo || "Tem certeza?";
+  $("conf-detalhe").innerHTML = opcoes.detalhe || "";
+  var al = $("conf-alerta");
+  if (opcoes.alerta){
+    al.innerHTML = opcoes.alerta;
+    al.style.display = "block";
+  } else {
+    al.style.display = "none";
+  }
+  $("conf-sim").textContent = opcoes.botao || "Sim, confirmar";
+  _confAcao = opcoes.aoConfirmar;
+  $("modal-conf").className = "modal-conf ativo";
+}
+
+function fecharConfirmacao(){
+  $("modal-conf").className = "modal-conf";
+  _confAcao = null;
+}
+
+/* ---------- LIBERAR (com confirmacao) ---------- */
 function liberar(n){
   var item = achar(n);
   if (!item) return;
-  item.s = 0; item.b = null; item.w = null; item.d = null; item.r = null; item.pago = false;
-  renderizar(); renderizarPendentes(); atualizarStats();
 
-  /* Remove do servidor (volta a ficar livre para todos) */
-  enviarAcaoServidor("liberar", [n]).then(function (ok) {
-    toast(ok ? "Numero " + n + " liberado e publicado!" : "Numero " + n + " liberado (local)", "ok");
+  var nome = esc(item.b || "sem nome");
+  var status = item.s === 2 ? "Confirmado (pago)" : "Aguardando comprovante";
+  var pago = (item.s === 2);
+
+  pedirConfirmacao({
+    icone: pago ? "&#x2757;" : "&#x1F513;",
+    titulo: "Liberar o n\u00famero " + n + "?",
+    detalhe:
+      "<strong>Participante:</strong> " + nome + "<br>" +
+      "<strong>Status atual:</strong> " + status + "<br><br>" +
+      "Ao liberar, o n\u00famero volta a ficar <strong>livre para todos</strong> " +
+      "e os dados do participante s\u00e3o apagados.",
+    alerta: pago
+      ? "&#x2757; Este n\u00famero est\u00e1 CONFIRMADO como PAGO. Liberar vai desfazer o pagamento."
+      : null,
+    botao: "Sim, liberar",
+    aoConfirmar: function(){
+      item.s = 0; item.b = null; item.w = null; item.d = null; item.r = null; item.pago = false;
+      renderizar(); renderizarPendentes(); atualizarStats();
+      enviarAcaoServidor("liberar", [n]).then(function (ok) {
+        toast(ok ? "Numero " + n + " liberado e publicado!" : "Numero " + n + " liberado (local)", "ok");
+      });
+    }
+  });
+}
+
+/* ---------- LIBERAR VARIOS ---------- */
+function liberarVarios(lista){
+  if (!lista.length) return;
+  pedirConfirmacao({
+    icone: "&#x1F5D1;",
+    titulo: "Liberar " + lista.length + " n\u00famero(s)?",
+    detalhe: "<strong>N\u00fameros:</strong> " + lista.join(", ") + "<br><br>" +
+             "Todos voltar\u00e3o a ficar <strong>livres para todos</strong>.",
+    alerta: "Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.",
+    botao: "Sim, liberar " + lista.length,
+    aoConfirmar: function(){
+      for (var i=0;i<lista.length;i++){
+        var it = achar(lista[i]);
+        if (it){ it.s=0; it.b=null; it.w=null; it.d=null; it.r=null; it.pago=false; }
+      }
+      renderizar(); renderizarPendentes(); atualizarStats();
+      enviarAcaoServidor("liberar", lista).then(function(ok){
+        toast(ok ? lista.length + " numeros liberados!" : lista.length + " liberados (local)", "ok");
+      });
+    }
   });
 }
 
@@ -596,13 +712,28 @@ function marcar(n){
 }
 
 function limparTudo(){
-  if (!confirm("Tem certeza que deseja LIBERAR TODOS os " + NUMEROS.length + " numeros?\n\nIsso apaga todas as reservas e confirmacoes!")) return;
-  for (var i=0;i<NUMEROS.length;i++){
-    NUMEROS[i].s = 0; NUMEROS[i].b = null; NUMEROS[i].w = null;
-    NUMEROS[i].d = null; NUMEROS[i].r = null; NUMEROS[i].pago = false;
-  }
-  renderizar(); renderizarPendentes(); atualizarStats();
-  toast("Todos os numeros foram liberados.", "ok");
+  var ocupados = 0;
+  for (var i=0;i<NUMEROS.length;i++){ if (NUMEROS[i].s !== 0) ocupados++; }
+
+  pedirConfirmacao({
+    icone: "&#x1F5D1;",
+    titulo: "Liberar TODOS os n\u00fameros?",
+    detalhe: "<strong>Total de n\u00fameros:</strong> " + NUMEROS.length + "<br>" +
+             "<strong>Atualmente reservados/confirmados:</strong> " + ocupados + "<br><br>" +
+             "Todas as reservas e confirma\u00e7\u00f5es ser\u00e3o <strong>apagadas</strong>.",
+    alerta: ocupados
+      ? "&#x2757; Voc\u00ea tem " + ocupados + " n\u00famero(s) reservado(s) ou pago(s). Isso vai apagar tudo!"
+      : "Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.",
+    botao: "Sim, apagar tudo",
+    aoConfirmar: function(){
+      for (var i=0;i<NUMEROS.length;i++){
+        NUMEROS[i].s = 0; NUMEROS[i].b = null; NUMEROS[i].w = null;
+        NUMEROS[i].d = null; NUMEROS[i].r = null; NUMEROS[i].pago = false;
+      }
+      renderizar(); renderizarPendentes(); atualizarStats();
+      toast("Todos os numeros foram liberados.", "ok");
+    }
+  });
 }
 
 /* ---------- RENDER DA GRADE ---------- */
@@ -913,6 +1044,20 @@ function ligar(){
     });
   }
 
+  /* Modal de confirmacao */
+  $("conf-nao").addEventListener("click", fecharConfirmacao);
+  $("conf-sim").addEventListener("click", function(){
+    var acao = _confAcao;
+    fecharConfirmacao();
+    if (typeof acao === "function") acao();
+  });
+  $("modal-conf").addEventListener("click", function(ev){
+    if (ev.target === this) fecharConfirmacao();
+  });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape" && $("modal-conf").classList.contains("ativo")) fecharConfirmacao();
+  });
+
   /* Confirmar TODOS de uma vez */
   $("area-pendentes").addEventListener("click", function(ev){
     var todos = ev.target.closest ? ev.target.closest("#btn-conf-todos") : null;
@@ -920,14 +1065,23 @@ function ligar(){
       var nums = [];
       for (var i=0;i<NUMEROS.length;i++){ if (NUMEROS[i].s === 1) nums.push(NUMEROS[i].n); }
       if (!nums.length) return;
-      if (!confirm("Confirmar o pagamento de TODOS os " + nums.length + " numeros pendentes?")) return;
-      for (var j=0;j<nums.length;j++){
-        var it = achar(nums[j]);
-        if (it){ it.s = 2; it.pago = true; it.r = null; }
-      }
-      renderizar(); renderizarPendentes(); atualizarStats();
-      enviarAcaoServidor("confirmar", nums).then(function(ok){
-        toast(ok ? nums.length + " numeros confirmados e publicados!" : nums.length + " confirmados (local)", "ok");
+      pedirConfirmacao({
+        icone: "&#x2705;",
+        titulo: "Confirmar " + nums.length + " pagamento(s)?",
+        detalhe: "<strong>N\u00fameros:</strong> " + nums.join(", ") + "<br><br>" +
+                 "Todos ser\u00e3o marcados como <strong>PAGOS</strong> e o site p\u00fablico " +
+                 "mostrar\u00e1 como confirmados.",
+        botao: "Sim, confirmar " + nums.length,
+        aoConfirmar: function(){
+          for (var j=0;j<nums.length;j++){
+            var it = achar(nums[j]);
+            if (it){ it.s = 2; it.pago = true; it.r = null; }
+          }
+          renderizar(); renderizarPendentes(); atualizarStats();
+          enviarAcaoServidor("confirmar", nums).then(function(ok){
+            toast(ok ? nums.length + " numeros confirmados e publicados!" : nums.length + " confirmados (local)", "ok");
+          });
+        }
       });
       return;
     }
