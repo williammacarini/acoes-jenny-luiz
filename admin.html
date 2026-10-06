@@ -530,6 +530,8 @@ function renderizarPendentes(){
       '<h2>&#x23F3; ' + pend.length + ' n&uacute;mero(s) aguardando comprovante</h2>' +
       '<p class="sub">Confira o comprovante no WhatsApp e clique em <strong>Confirmar pagamento</strong>. ' +
       'Se n&atilde;o receber, clique em <strong>Liberar</strong> para devolver o n&uacute;mero.</p>' +
+      '<div style="margin-bottom:12px"><button class="btn-conf" type="button" id="btn-conf-todos" ' +
+      'style="padding:10px 18px;font-size:.78rem">&#x2705; Confirmar TODOS os ' + pend.length + ' pendentes</button></div>' +
       itens.join("") +
     '</div>';
 }
@@ -911,8 +913,24 @@ function ligar(){
     });
   }
 
-  /* Cliques na lista de PENDENTES */
+  /* Confirmar TODOS de uma vez */
   $("area-pendentes").addEventListener("click", function(ev){
+    var todos = ev.target.closest ? ev.target.closest("#btn-conf-todos") : null;
+    if (todos){
+      var nums = [];
+      for (var i=0;i<NUMEROS.length;i++){ if (NUMEROS[i].s === 1) nums.push(NUMEROS[i].n); }
+      if (!nums.length) return;
+      if (!confirm("Confirmar o pagamento de TODOS os " + nums.length + " numeros pendentes?")) return;
+      for (var j=0;j<nums.length;j++){
+        var it = achar(nums[j]);
+        if (it){ it.s = 2; it.pago = true; it.r = null; }
+      }
+      renderizar(); renderizarPendentes(); atualizarStats();
+      enviarAcaoServidor("confirmar", nums).then(function(ok){
+        toast(ok ? nums.length + " numeros confirmados e publicados!" : nums.length + " confirmados (local)", "ok");
+      });
+      return;
+    }
     var conf = ev.target.closest ? ev.target.closest("[data-conf]") : null;
     if (conf){ confirmarPagamento(parseInt(conf.getAttribute("data-conf"),10)); return; }
     var lib = ev.target.closest ? ev.target.closest("[data-lib]") : null;

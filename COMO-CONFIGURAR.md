@@ -1,4 +1,14 @@
-# 🔄 Como fazer o site e o painel conversarem
+# ✅ INTEGRAÇÃO ATIVA — Google Sheets conectado
+
+> **Status:** configurado e funcionando em 06/10/2026
+>
+> Servidor: `https://script.google.com/macros/s/AKfycbwHVtA2SE.../exec`
+>
+> Planilha: [Reservas Jenny & Luiz](https://docs.google.com/spreadsheets/d/1dI2f2_1PxFacofv8DDps_XvOCh7iQ1T1LIejMsvowhI/edit)
+
+---
+
+# 🔄 Como funciona a integração
 
 ## O problema que você viu
 

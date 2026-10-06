@@ -232,19 +232,60 @@ function acaoConfirmar(corpo) {
   var dados = aba.getDataRange().getValues();
   var alterados = 0;
 
+  /* Lista de numeros que ainda faltam confirmar */
+  var faltam = lista.slice();
+
   for (var i = 1; i < dados.length; i++) {
     var numsLinha = paraLista(dados[i][1]);
-    var contem = false;
-    for (var a = 0; a < lista.length; a++) {
-      if (numsLinha.indexOf(lista[a]) !== -1) { contem = true; break; }
+
+    /* Quais numeros DESTA linha estao sendo confirmados? */
+    var confirmarAgora = [];
+    var manterNaLinha = [];
+    for (var a = 0; a < numsLinha.length; a++) {
+      if (lista.indexOf(numsLinha[a]) !== -1) {
+        confirmarAgora.push(numsLinha[a]);
+      } else {
+        manterNaLinha.push(numsLinha[a]);
+      }
     }
-    if (contem) {
-      aba.getRange(i + 1, 6).setValue('confirmado');
+    if (!confirmarAgora.length) continue;
+
+    /* Remove da lista de pendentes */
+    for (var c = 0; c < confirmarAgora.length; c++) {
+      var idx = faltam.indexOf(confirmarAgora[c]);
+      if (idx !== -1) faltam.splice(idx, 1);
+    }
+
+    var statusLinha = String(dados[i][5] || '').toLowerCase();
+
+    if (manterNaLinha.length === 0) {
+      /* A LINHA INTEIRA foi confirmada: so muda o status */
+      if (statusLinha !== 'confirmado') {
+        aba.getRange(i + 1, 6).setValue('confirmado');
+        alterados++;
+      }
+    } else {
+      /* SO PARTE da linha: divide em duas linhas */
+      var nome = dados[i][2];
+      var whats = dados[i][3];
+      var total = dados[i][4];
+      var data = dados[i][0];
+
+      /* Linha original fica so com os nao confirmados (aguardando) */
+      aba.getRange(i + 1, 2).setValue(manterNaLinha.join(', '));
+      aba.getRange(i + 1, 6).setValue('aguardando');
+
+      /* Cria uma nova linha com os confirmados */
+      aba.appendRow([data, confirmarAgora.join(', '), nome, whats, total, 'confirmado']);
       alterados++;
     }
   }
 
-  return responder({ ok: true, linhas: alterados });
+  return responder({
+    ok: true,
+    alterados: alterados,
+    naoEncontrados: faltam
+  });
 }
 
 
@@ -261,28 +302,42 @@ function acaoLiberar(corpo) {
   var aba = pegarAba();
   var dados = aba.getDataRange().getValues();
 
-  /* Reconstroi a planilha sem as linhas que contem esses numeros */
-  var manter = [dados[0]];                 /* cabecalho */
+  /* Reconstroi a planilha removendo APENAS os numeros pedidos.
+     Se a linha tem outros numeros, ela continua com eles.          */
+  var manter = [dados[0]];
   var removidos = 0;
 
   for (var i = 1; i < dados.length; i++) {
     var numsLinha = paraLista(dados[i][1]);
-    var contem = false;
-    for (var a = 0; a < lista.length; a++) {
-      if (numsLinha.indexOf(lista[a]) !== -1) { contem = true; break; }
+    var restantes = [];
+
+    for (var a = 0; a < numsLinha.length; a++) {
+      if (lista.indexOf(numsLinha[a]) === -1) {
+        restantes.push(numsLinha[a]);
+      } else {
+        removidos++;
+      }
     }
-    if (contem) {
-      removidos++;
-    } else {
+
+    if (restantes.length === numsLinha.length) {
+      /* Nada foi removido desta linha: mantem como esta */
       manter.push(dados[i]);
+    } else if (restantes.length > 0) {
+      /* Sobraram numeros: atualiza a linha */
+      var linha = dados[i].slice();
+      linha[1] = restantes.join(', ');
+      manter.push(linha);
     }
+    /* Se restantes estiver vazio, a linha inteira sai */
   }
 
   if (removidos) {
     aba.clear();
-    aba.getRange(1, 1, manter.length, 6).setValues(manter);
-    aba.getRange('A1:F1').setFontWeight('bold').setBackground('#E8C5D4');
-    aba.setFrozenRows(1);
+    if (manter.length) {
+      aba.getRange(1, 1, manter.length, 6).setValues(manter);
+      aba.getRange('A1:F1').setFontWeight('bold').setBackground('#E8C5D4');
+      aba.setFrozenRows(1);
+    }
   }
 
   return responder({ ok: true, removidos: removidos });
