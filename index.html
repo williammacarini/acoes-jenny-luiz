@@ -244,7 +244,7 @@ body{font-family:var(--fonte);background:var(--bg);color:var(--texto);line-heigh
   background:white;border:2px dashed var(--dourado);border-radius:18px;padding:20px;margin-top:6px
 }
 .pix-qr{flex-shrink:0;text-align:center}
-.pix-qr img{width:170px;height:170px;display:block;border-radius:12px;background:white;padding:6px;box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.pix-qr img{width:240px;height:240px;display:block;border-radius:12px;background:white;padding:8px;box-shadow:0 3px 14px rgba(0,0,0,.08)}
 .pix-qr .qr-legenda{font-size:.7rem;color:var(--texto-claro);margin-top:6px;font-weight:600}
 .pix-dados{flex:1;min-width:240px;text-align:center}
 .pix-dados .titulo-pix{font-size:.9rem;font-weight:700;color:var(--rosa-escuro);margin-bottom:6px}
@@ -478,7 +478,7 @@ body.tem-selecao{padding-bottom:110px}
   .como-participar h2{font-size:1.08rem}
   .aviso-fluxo{font-size:.74rem;padding:11px 12px;line-height:1.5}
   .pix-area{gap:14px;padding:14px;flex-direction:column}
-  .pix-qr img{width:170px;height:170px}
+  .pix-qr img{width:230px;height:230px}
   .pix-dados{min-width:0;width:100%}
   .pix-dados .chave{font-size:.72rem;padding:9px 10px}
   .pix-botoes{flex-direction:column;gap:7px}
@@ -629,16 +629,14 @@ body.tem-selecao{padding-bottom:110px}
 
   <div class="pix-area">
     <div class="pix-qr">
-      <img src="assets/pix-qr.svg" alt="QR Code para pagamento via Pix" width="170" height="170" loading="lazy">
+      <img src="assets/pix-qr.png" alt="QR Code para pagamento via Pix" width="240" height="240" loading="lazy">
       <div class="qr-legenda">Aponte a c&acirc;mera do banco</div>
     </div>
     <div class="pix-dados">
       <div class="titulo-pix">&#x1F4B3; Pague com Pix</div>
-      <span class="chave" id="chave-pix">b9b4a193-c097-41ae-8da1-007199e7e9c652</span>
       <div class="favorecido">Favorecido: <strong>Jennyfer Borba de Souza</strong></div>
       <div class="pix-botoes">
         <button class="btn-copia-cola" type="button" onclick="copiarPixCopiaECola()">&#x1F4CB; Copiar Pix Copia e Cola</button>
-        <button class="btn-copiar" type="button" onclick="copiarChave()">Copiar Chave</button>
       </div>
     </div>
   </div>
@@ -1298,9 +1296,6 @@ function mostrarMinhasReservas() {
 function copiarPixCopiaECola() {
   copiarTexto(CFG.pixCopiaECola, "Pix Copia e Cola copiado!");
 }
-function copiarChave() {
-  copiarTexto($("chave-pix").textContent.trim(), "Chave Pix copiada!");
-}
 
 /* ============================================================
    Eventos
@@ -1351,7 +1346,6 @@ function aplicarConfig(campanha) {
   if (campanha.urlServidor) CFG.urlServidor = campanha.urlServidor;
   if (campanha.tokenServidor) CFG.tokenServidor = campanha.tokenServidor;
   if (campanha.frases && campanha.frases.length) CFG.frases = campanha.frases;
-  if (campanha.pix) $("chave-pix").textContent = campanha.pix;
   if (campanha.totalNumeros) {
     $("info-total").textContent = fmtNum(campanha.totalNumeros);
     $("status-total").textContent = fmtNum(campanha.totalNumeros) + " numeros";
