@@ -1044,24 +1044,76 @@ var reservando = false;   /* evita duplo envio */
    Enviar a reserva para o servidor (Google Sheets)
    Se nao estiver configurado, nao faz nada (segue funcionando local)
    ============================================================ */
-function enviarParaServidor(dados) {
-  if (!CFG.urlServidor) return;              /* servidor nao configurado */
+function servidorConfigurado() {
+  return !!(CFG.urlServidor && CFG.urlServidor.length > 10);
+}
 
-  try {
-    /* Usa text/plain para evitar bloqueio de CORS no Apps Script */
-    fetch(CFG.urlServidor, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        token: CFG.tokenServidor,
-        numeros: dados.numeros,
-        nome: dados.nome,
-        whatsapp: dados.whatsapp,
-        total: dados.total
-      })
-    }).catch(function () { /* sem internet: segue o fluxo normal */ });
-  } catch (e) { /* ignora */ }
+/* ------------------------------------------------------------
+   BUSCAR os status do servidor (quais numeros ja foram reservados)
+   ------------------------------------------------------------ */
+function buscarStatusDoServidor() {
+  if (!servidorConfigurado()) return Promise.resolve(false);
+
+  var url = CFG.urlServidor + "?token=" + encodeURIComponent(CFG.tokenServidor) +
+            "&t=" + Date.now();
+
+  return fetch(url)
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function (d) {
+      if (!d.ok || !d.numeros) return false;
+
+      var aplicados = 0;
+      for (var chave in d.numeros) {
+        if (!d.numeros.hasOwnProperty(chave)) continue;
+        var num = parseInt(chave, 10);
+        var info = d.numeros[chave];
+        var item = null;
+        for (var i = 0; i < NUMEROS.length; i++) {
+          if (NUMEROS[i].n === num) { item = NUMEROS[i]; break; }
+        }
+        if (!item) continue;
+
+        var novoStatus = (info.status === "confirmado") ? 2 : 1;
+        if (item.s !== novoStatus) {
+          item.s = novoStatus;
+          item.b = info.nome || item.b;
+          item.w = info.whatsapp || item.w;
+          item.d = info.data || item.d;
+          item.pago = (novoStatus === 2);
+          item.r = null;   /* o servidor e a fonte da verdade */
+          aplicados++;
+        }
+      }
+      return aplicados;
+    })
+    .catch(function () { return false; });
+}
+
+/* ------------------------------------------------------------
+   GRAVAR uma reserva no servidor
+   ------------------------------------------------------------ */
+function enviarParaServidor(dados) {
+  if (!servidorConfigurado()) return Promise.resolve(false);
+
+  var corpo = JSON.stringify({
+    token: CFG.tokenServidor,
+    acao: "reservar",
+    numeros: dados.numeros,
+    nome: dados.nome,
+    whatsapp: dados.whatsapp,
+    total: dados.total
+  });
+
+  return fetch(CFG.urlServidor, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: corpo
+  }).then(function () { return true; })
+    .catch(function () { return false; });
 }
 
 /* ============================================================
@@ -1162,11 +1214,17 @@ function confirmarNumero() {
   mostrarMinhasReservas();
 
   /* Envia para a planilha do organizador (se configurado) */
+  var numerosReservados = SELECIONADOS.slice();
   enviarParaServidor({
-    numeros: SELECIONADOS.slice(),
+    numeros: numerosReservados,
     nome: nome,
     whatsapp: whats,
     total: total
+  }).then(function () {
+    /* Recarrega os status para mostrar como reservado para todos */
+    setTimeout(function () {
+      buscarStatusDoServidor().then(function () { renderizarNumeros(); });
+    }, 1200);
   });
 
   var linhas = [
@@ -1318,6 +1376,17 @@ function usarDados(d) {
   renderizarNumeros();
   atualizarBarraSelecao();
   mostrarMinhasReservas();
+
+  /* Se o servidor estiver configurado, sincroniza os status */
+  if (servidorConfigurado()) {
+    buscarStatusDoServidor().then(function (n) {
+      if (n) renderizarNumeros();     /* atualiza a tela com os status novos */
+    });
+    /* Atualiza de tempos em tempos (a cada 60s) */
+    setInterval(function () {
+      buscarStatusDoServidor().then(function (n) { if (n) renderizarNumeros(); });
+    }, 60000);
+  }
 }
 
 function erroAoCarregar() {

@@ -1,164 +1,187 @@
-# 🔄 Como fazer a reserva do site aparecer no seu painel
+# 🔄 Como fazer o site e o painel conversarem
 
-## Por que isso não funciona sozinho?
+## O problema que você viu
 
-O site e o painel são **arquivos estáticos** (HTML). Quando alguém reserva um número:
+Você reservou o número 25 no painel, mas ele continuava **verde (livre)** no site.
+E o número 24 aparecia como confirmado, mas o 25 não.
 
-- Os dados ficam salvos **no navegador daquela pessoa** (`localStorage`)
-- O painel que **você** abre é outro navegador, em outro computador
-- **Os dois nunca se conversam** — é uma limitação técnica de sites estáticos
+**Motivo:** o site e o painel são arquivos separados. O que você marca no painel
+fica só na memória do navegador até você baixar o `data.json` e subir no GitHub.
 
-Para resolver, precisamos de um **ponto central na nuvem** que os dois acessem.
-
----
-
-## ✅ Duas soluções (use uma ou as duas)
-
-| Solução | Como funciona | Esforço |
-|---|---|---|
-| **A) Copiar e colar** | A pessoa clica em "Copiar resumo" e te manda no WhatsApp. Você cola no painel. | ✅ Já está pronto |
-| **B) Google Sheets** | Automático: o site grava na sua planilha e o painel lê de lá. | ⏱️ 10 min para configurar |
+**Consequência grave:** duas pessoas podem escolher o mesmo número sem saber.
 
 ---
 
-# 🅰️ SOLUÇÃO A — Copiar e colar (já funciona!)
+## ✅ A solução: Google Sheets (10 minutos, grátis)
 
-**Nada para configurar.** Já está no ar.
+Uma planilha na nuvem que o site e o painel usam juntos.
 
-### O que a pessoa faz:
-1. Escolhe os números no site
-2. Preenche nome e WhatsApp
-3. Clica em **"📋 Copiar resumo da reserva"**
-4. Cola no WhatsApp e te envia
-
-O texto que chega é assim:
 ```
-RESERVA|5,10,15|Maria Silva|(48) 99958-9697|R$ 6,00
+      PESSOA ESCOLHE NO SITE
+              |
+              v
+      [ PLANILHA GOOGLE ]  <-- ponto central
+              |
+              v
+      VOCE VALIDA NO PAINEL
+              |
+              v
+      SITE MOSTRA ATUALIZADO PARA TODOS
 ```
 
-### O que você faz:
-1. Abre o painel (`admin.html`)
-2. Clica em **"📥 Colar reservas"**
-3. Cola **uma ou várias linhas** de uma vez
-4. Clica em **Processar**
-
-Os números são marcados como **"aguardando comprovante"** automaticamente, com o nome e o WhatsApp da pessoa.
-
-> 💡 Se 3 pessoas te mandarem o resumo, cole as 3 linhas juntas — o painel processa todas.
+**O que você ganha:**
+- ✅ Número reservado aparece **na hora** para todos
+- ✅ Ninguém consegue escolher número já reservado
+- ✅ Você confirma o pagamento e o site atualiza sozinho
+- ✅ Não precisa mais baixar/subir arquivo
+- ✅ Você vê tudo numa planilha, se quiser
 
 ---
 
-# 🅱️ SOLUÇÃO B — Google Sheets (automático)
-
-Quando alguém reservar no site, aparece **sozinho** no seu painel.
+# 📋 PASSO A PASSO
 
 ## Passo 1 — Criar a planilha
 
-1. Acesse [sheets.google.com](https://sheets.google.com)
-2. Clique em **+ Em branco** para criar uma planilha
-3. Dê um nome: **Reservas Jenny & Luiz**
+1. Abra **[sheets.google.com](https://sheets.google.com)**
+2. Clique no **+** (canto inferior direito) para criar uma planilha
+3. Nomeie: **Reservas Ações Jenny & Luiz**
 
 ## Passo 2 — Abrir o editor de código
 
-1. No menu da planilha, clique em **Extensões** → **Apps Script**
-2. Abre uma nova aba com um editor de código
+1. No menu superior da planilha: **Extensões** → **Apps Script**
+2. Vai abrir uma nova aba com um editor
 
 ## Passo 3 — Colar o código
 
-1. **Apague tudo** que estiver no editor
-2. Abra o arquivo `google-apps-script/Codigo.gs` desta pasta
-3. Copie **todo** o conteúdo e cole no editor
-4. Clique no ícone de **disquete** (💾) ou `Ctrl+S` para salvar
+1. **Selecione tudo** no editor (`Ctrl+A` / `Cmd+A`) e **apague**
+2. Abra o arquivo **`google-apps-script/Codigo.gs`** desta pasta
+3. Copie **todo** o conteúdo
+4. Cole no editor
+5. Salve com `Ctrl+S` / `Cmd+S` (ou ícone de disquete)
 
-## Passo 4 — Publicar como serviço web
+O nome do projeto pode ficar como "Projeto sem título".
 
-1. No canto superior direito, clique em **Implantar** → **Nova implantação**
-2. Clique na engrenagem ⚙️ ao lado de "Selecionar tipo" → escolha **App da Web**
-3. Preencha:
+## Passo 4 — Publicar
+
+1. Clique em **Implantar** → **Nova implantação** (canto superior direito)
+2. Clique na **engrenagem ⚙️** ao lado de "Selecionar tipo"
+3. Escolha **App da Web**
+4. Preencha:
    - **Descrição:** `Reservas`
-   - **Executar como:** **Eu** (seu email)
+   - **Executar como:** **Eu (seu email)**
    - **Quem pode acessar:** **Qualquer pessoa**
-4. Clique em **Implantar**
+5. Clique em **Implantar**
 
-> ⚠️ O Google vai pedir autorização. Clique em **Autorizar acesso** → escolha sua conta → **Avançado** → **Ir para... (não seguro)** → **Permitir**.
-> Isso é normal: o Google avisa porque o script é seu, não de terceiros.
+### ⚠️ Vai aparecer um aviso do Google
 
-5. **Copie a URL** que aparece. Ela termina com `/exec` e é parecida com:
+> "O Google não verificou este app"
+
+Isso é **normal** — o script é seu, não de terceiros. Faça:
+
+1. Clique em **Autorizar acesso**
+2. Escolha sua conta Google
+3. Clique em **Avançado**
+4. Clique em **Acessar Reservas (não seguro)**
+5. Clique em **Permitir**
+
+## Passo 5 — Copiar a URL
+
+Depois de implantar, aparece uma URL assim:
+
 ```
-https://script.google.com/macros/s/AKfycbx.../exec
+https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxxx/exec
 ```
 
-## Passo 5 — Colocar a URL no projeto
+**Copie ela.** (Se fechar a janela, vá em **Implantar** → **Gerenciar implantações**.)
 
-Abra o arquivo **`data.json`** e procure estas linhas:
+## Passo 6 — Colocar no projeto
+
+Abra o arquivo **`data.json`** e procure:
 
 ```json
 "urlServidor": "",
 "tokenServidor": "jenny-luiz-2026",
 ```
 
-Cole a sua URL entre as aspas:
+Cole sua URL entre as aspas:
 
 ```json
-"urlServidor": "https://script.google.com/macros/s/AKfycbx.../exec",
+"urlServidor": "https://script.google.com/macros/s/AKfycb.../exec",
 "tokenServidor": "jenny-luiz-2026",
 ```
 
-## Passo 6 — Sincronizar e publicar
+## Passo 7 — Aplicar e publicar
 
 No terminal, dentro da pasta do projeto:
 
 ```bash
 python3 sincronizar.py
+git add -A && git commit -m "Ativa sincronizacao" && git push
 ```
 
-Depois envie para o GitHub: `data.json`, `index.html` e `admin.html`.
+O Netlify publica sozinho em ~30 segundos.
 
-## Passo 7 — Testar
+## Passo 8 — Testar
 
-1. Abra o **painel** → clique em **"🔄 Buscar reservas do site"**
-2. Faça uma reserva de teste no site
-3. Clique em **Buscar reservas do site** novamente
-4. O número deve aparecer como **aguardando comprovante** ✅
+1. Abra o site e reserve um número de teste
+2. Abra o painel → o número deve aparecer em **"aguardando comprovante"**
+3. No painel, clique em **✅ Confirmar pagamento**
+4. Abra o site de novo (ou recarregue) → o número deve estar **confirmado**
+
+Se funcionar, está pronto! 🎉
 
 ---
 
-## 🔐 Sobre o token
+# 🔐 Trocar a senha (recomendado)
 
-O `tokenServidor` é uma senha simples que impede que estranhos leiam sua planilha.
+O `tokenServidor` protege sua planilha. O padrão é `jenny-luiz-2026`.
 
-**Recomendo trocar.** No arquivo `google-apps-script/Codigo.gs`, procure:
+**Para trocar:**
 
-```javascript
-var TOKEN = 'jenny-luiz-2026';
-```
-
-Troque por algo só seu, por exemplo:
-```javascript
-var TOKEN = 'jennyLuiz@2026xyz';
-```
-
-Depois troque o **mesmo valor** em `data.json` (campo `tokenServidor`), salve, rode
-`python3 sincronizar.py` e publique novamente.
+1. No `Codigo.gs` (e no editor do Apps Script), mude:
+   ```javascript
+   var TOKEN = 'suaSenhaSecreta123';
+   ```
+2. Salve e **implante de novo** (Implantar → Gerenciar implantações → editar → Versão: Nova)
+3. Troque o **mesmo valor** em `data.json` no campo `tokenServidor`
+4. Rode `python3 sincronizar.py` e publique
 
 ---
 
-## ❓ Perguntas frequentes
+# 📊 Como fica a planilha
 
-**Preciso pagar algo?**
-Não. Google Sheets e Apps Script são gratuitos, com limite generoso (muito acima do que você precisa).
+| Data | Numeros | Nome | WhatsApp | Total | Status |
+|---|---|---|---|---|---|
+| 06/10 14:39 | 25 | William | (47) 99933-4946 | R$ 2,00 | aguardando |
+| 06/10 14:45 | 30, 31 | Ana Paula | (48) 99958-9697 | R$ 4,00 | confirmado |
 
-**E se eu não configurar o Google Sheets?**
-O site continua funcionando normalmente. Você só vai usar a Solução A (copiar e colar).
+Você pode abrir a planilha a qualquer momento para ver tudo.
+
+---
+
+# ❓ Perguntas frequentes
+
+**Preciso pagar?**
+Não. Google Sheets e Apps Script são gratuitos.
 
 **A pessoa precisa de conta Google?**
 Não. Ela só usa o site normalmente.
 
-**E se a internet cair na hora da reserva?**
-O site continua funcionando localmente — os números ficam pré-reservados no navegador dela, e o botão "Copiar resumo" continua disponível.
+**E se o site ficar sem internet?**
+Continua funcionando — os números ficam salvos no navegador dela e o botão
+"Copiar resumo" continua disponível.
 
-**Como vejo o que está na planilha?**
-Abra a planilha no Google Sheets. Cada reserva vira uma linha com data, números, nome, WhatsApp, total e status.
+**E se eu não configurar?**
+O site funciona, mas cada visitante vê apenas o `data.json` que foi publicado.
+Você precisaria baixar e subir o arquivo manualmente.
 
-**Posso marcar o pagamento direto na planilha?**
-Pode, mas o jeito certo é pelo painel — assim o site continua mostrando o status correto para todos.
+**Posso editar a planilha na mão?**
+Pode, mas o jeito certo é pelo painel — assim o site reflete na hora.
+
+**Como vejo se está funcionando?**
+No painel, clique em **🔄 Buscar reservas do site**. Se aparecer algo, está conectado.
+
+**Preciso reimplantar se mudar o código?**
+Sim. Sempre que editar o `Codigo.gs`, vá em
+**Implantar** → **Gerenciar implantações** → **editar (lápis)** →
+**Versão: Nova versão** → **Implantar**.

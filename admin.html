@@ -375,6 +375,17 @@ function usarDadosAdmin(d){
   renderizar();
   renderizarPendentes();
   atualizarStats();
+
+  /* Se o servidor estiver configurado, BUSCA as reservas automaticamente */
+  if (URL_SERVIDOR) {
+    sincronizarComServidor(true);          /* true = silencioso */
+    /* E atualiza a cada 60 segundos */
+    if (!window.__timerSync) {
+      window.__timerSync = setInterval(function () {
+        if ($("dashboard").style.display === "block") sincronizarComServidor(true);
+      }, 60000);
+    }
+  }
 }
 
 function carregar(){
@@ -532,7 +543,11 @@ function confirmarPagamento(n){
   item.r = null;                 /* nao expira mais */
   if (!item.b) item.b = "Confirmado manualmente";
   renderizar(); renderizarPendentes(); atualizarStats();
-  toast("Numero " + n + " confirmado!", "ok");
+
+  /* Grava a confirmacao no servidor (o site publico vai refletir) */
+  enviarAcaoServidor("confirmar", [n]).then(function (ok) {
+    toast(ok ? "Numero " + n + " confirmado e publicado!" : "Numero " + n + " confirmado (local)", "ok");
+  });
 }
 
 function liberar(n){
@@ -540,7 +555,11 @@ function liberar(n){
   if (!item) return;
   item.s = 0; item.b = null; item.w = null; item.d = null; item.r = null; item.pago = false;
   renderizar(); renderizarPendentes(); atualizarStats();
-  toast("Numero " + n + " liberado!", "ok");
+
+  /* Remove do servidor (volta a ficar livre para todos) */
+  enviarAcaoServidor("liberar", [n]).then(function (ok) {
+    toast(ok ? "Numero " + n + " liberado e publicado!" : "Numero " + n + " liberado (local)", "ok");
+  });
 }
 
 /* ---------- MARCAR MANUALMENTE ---------- */
@@ -639,6 +658,22 @@ function atualizarStats(){
   if ($("lg-livre")) $("lg-livre").textContent = pLivre.toFixed(1) + "%";
 }
 
+/* ---------- ENVIAR ACAO AO SERVIDOR ---------- */
+function enviarAcaoServidor(acao, numeros) {
+  if (!URL_SERVIDOR) return Promise.resolve(false);
+  var corpo = JSON.stringify({
+    token: TOKEN_SERVIDOR,
+    acao: acao,
+    numeros: numeros
+  });
+  return fetch(URL_SERVIDOR, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: corpo
+  }).then(function () { return true; }).catch(function () { return false; });
+}
+
 /* ---------- BUSCAR RESERVAS DO SERVIDOR (Google Sheets) ----------
    Le as reservas que as pessoas fizeram no site e marca os numeros
    como "aguardando comprovante" automaticamente.                    */
@@ -663,36 +698,59 @@ function sincronizarComServidor(silencioso) {
     .then(function (d) {
       if (!d.ok) throw new Error(d.erro || "erro no servidor");
 
-      var reservas = d.reservas || [];
-      var marcados = 0, pulados = 0;
+      /* O servidor devolve:
+         numeros: { "40": {status, nome, whatsapp, data}, ... }
+         reservas: [ {numeros:"40, 41", nome, whatsapp, status}, ... ] */
+      var mapa = d.numeros || {};
+      var marcados = 0, atualizados = 0, liberados = 0;
 
-      for (var i = 0; i < reservas.length; i++) {
-        var r = reservas[i];
-        /* Aceita "5, 10, 15" ou "[5,10,15]" */
-        var nums = String(r.numeros || "").replace(/[\[\]]/g, "").split(/[,\s;]+/);
-        for (var j = 0; j < nums.length; j++) {
-          var n = parseInt(nums[j], 10);
-          if (isNaN(n)) continue;
-          var item = achar(n);
-          if (!item) continue;
-          if (item.s !== 0) { pulados++; continue; }
+      /* --- 1) Marca/atualiza o que vem do servidor --- */
+      for (var chave in mapa) {
+        if (!mapa.hasOwnProperty(chave)) continue;
+        var num = parseInt(chave, 10);
+        if (isNaN(num)) continue;
+        var info = mapa[chave];
+        var item = achar(num);
+        if (!item) continue;
 
-          item.s = 1;
-          item.b = r.nome || null;
-          item.w = r.whatsapp || null;
-          item.d = r.data || new Date().toISOString();
-          item.r = new Date(Date.now() + PRAZO_HORAS * 3600000).toISOString();
-          item.pago = false;
-          marcados++;
+        var novoStatus = (String(info.status).toLowerCase() === "confirmado") ? 2 : 1;
+
+        if (item.s !== novoStatus) {
+          if (item.s === 0) marcados++; else atualizados++;
+          item.s = novoStatus;
+        }
+        item.b = info.nome || item.b;
+        item.w = info.whatsapp || item.w;
+        item.d = info.data || item.d || new Date().toISOString();
+        item.pago = (novoStatus === 2);
+        item.r = null;                    /* servidor e a fonte da verdade */
+      }
+
+      /* --- 2) Libera o que sumiu do servidor --- */
+      if (d.reservas) {
+        var listaServidor = d.reservas;
+        if (listaServidor.length === 0) {
+          /* Planilha vazia: libera tudo */
+          for (var i = 0; i < NUMEROS.length; i++) {
+            if (NUMEROS[i].s !== 0) {
+              NUMEROS[i].s = 0; NUMEROS[i].b = null; NUMEROS[i].w = null;
+              NUMEROS[i].d = null; NUMEROS[i].r = null; NUMEROS[i].pago = false;
+              liberados++;
+            }
+          }
         }
       }
 
       renderizar(); renderizarPendentes(); atualizarStats();
 
-      if (marcados) {
-        toast(marcados + " numero(s) recebido(s) do site!", "ok");
+      if (marcados || atualizados || liberados) {
+        var partes = [];
+        if (marcados) partes.push(marcados + " nova(s)");
+        if (atualizados) partes.push(atualizados + " atualizada(s)");
+        if (liberados) partes.push(liberados + " liberada(s)");
+        toast("Servidor: " + partes.join(", "), "ok");
       } else if (!silencioso) {
-        toast(pulados ? "Nenhuma reserva nova (ja estavam marcadas)." : "Nenhuma reserva encontrada.", "ok");
+        toast("Tudo sincronizado com o servidor.", "ok");
       }
     })
     .catch(function (e) {
