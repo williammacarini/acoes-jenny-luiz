@@ -29,7 +29,7 @@ body{font-family:var(--fonte);background:var(--bg);color:var(--texto);line-heigh
 
 /* ===== HERO ===== */
 .hero{
-  text-align:center;padding:44px 20px 40px;position:relative;overflow:hidden;
+  text-align:center;padding:34px 20px 40px;position:relative;overflow:hidden;
   background:linear-gradient(165deg,var(--rosa-claro) 0%,#FBEAF0 45%,var(--bg) 100%);
   border-radius:0 0 36px 36px;
 }
@@ -38,6 +38,26 @@ body{font-family:var(--fonte);background:var(--bg);color:var(--texto);line-heigh
   background:radial-gradient(circle,rgba(201,169,110,.22),transparent 70%);border-radius:50%;
 }
 .hero-coracoes{font-size:1.9rem;opacity:.55;margin-bottom:2px;letter-spacing:4px}
+
+/* ===== FOTO DO CASAL ===== */
+.hero-foto{
+  position:relative;width:200px;height:200px;margin:0 auto 18px;
+  border-radius:50%;padding:5px;
+  background:linear-gradient(135deg,var(--dourado),var(--rosa),var(--dourado));
+  box-shadow:0 10px 34px rgba(184,128,156,.32);
+  animation:aparecerFoto .7s ease both;
+}
+@keyframes aparecerFoto{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.hero-foto img{
+  width:100%;height:100%;object-fit:cover;border-radius:50%;
+  border:4px solid white;display:block
+}
+.hero-foto::after{
+  content:'\2764';position:absolute;bottom:2px;right:2px;
+  width:42px;height:42px;background:white;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;color:var(--rosa);box-shadow:0 3px 12px rgba(0,0,0,.15)
+}
 .hero h1{font-size:2.7rem;font-weight:800;color:var(--rosa-escuro);letter-spacing:-.6px;line-height:1.08}
 .hero h1 .amp{color:var(--dourado);font-weight:600}
 .hero-badge{
@@ -441,6 +461,9 @@ body.tem-selecao{padding-bottom:110px}
   .info-item{min-width:0;padding:12px 10px}
 }
 @media(max-width:520px){
+  .hero-foto{width:150px;height:150px;margin-bottom:14px;padding:4px}
+  .hero-foto img{border-width:3px}
+  .hero-foto::after{width:34px;height:34px;font-size:1rem;bottom:0;right:0}
   body{padding:0 8px}
   .container{padding:0 4px}
   .hero{padding:30px 12px 26px;border-radius:0 0 24px 24px}
@@ -541,7 +564,9 @@ body.tem-selecao{padding-bottom:110px}
 
 <!-- ============ HERO ============ -->
 <header class="hero">
-  <div class="hero-coracoes">&#x1F495; &#x1F495; &#x1F495;</div>
+  <div class="hero-foto">
+    <img src="assets/casal.jpg" alt="Jenny e Luiz - os noivos" width="200" height="200">
+  </div>
   <h1>Jenny <span class="amp">&amp;</span> Luiz</h1>
   <span class="hero-badge">A&ccedil;&otilde;es entre Amigos</span>
   <span class="hero-frase" id="frase-dinamica">Vem ser o protagonista do nosso sonho!</span>
