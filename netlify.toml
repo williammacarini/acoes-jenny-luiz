@@ -1,0 +1,17 @@
+# Configuracao do Netlify para o site Ações entre Amigos
+# Este arquivo faz o Netlify publicar direto da raiz do repositorio
+
+[build]
+  publish = "."
+
+# Garante que os arquivos sejam servidos corretamente
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+
+# Redireciona a raiz para o index
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
