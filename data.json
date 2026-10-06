@@ -22577,7 +22577,7 @@
       "avisoPreReserva": "Seu numero fica pre-reservado por {horas} horas. Envie o comprovante do Pix no WhatsApp para confirmar. Sem o comprovante, a pre-reserva pode ser liberada.",
       "avisoConfirmado": "Pagamento confirmado! O numero e seu."
     },
-    "urlServidor": "",
+    "urlServidor": "https://script.google.com/macros/s/AKfycbwHVtA2SEavwpsLKkMkDYIddtB8q-T0xMp_mipY_gR24Lm5kCL4pDbmwkwzQko7-bDs/exec",
     "tokenServidor": "jenny-luiz-2026"
   }
 }
