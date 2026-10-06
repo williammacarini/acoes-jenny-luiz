@@ -1,0 +1,6 @@
+# Arquivos temporarios
+.DS_Store
+*.tmp
+
+# Nao commitar backups locais
+data-backup.json
