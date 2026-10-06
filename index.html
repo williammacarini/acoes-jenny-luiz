@@ -367,10 +367,15 @@ body{font-family:var(--fonte);background:var(--bg);color:var(--texto);line-heigh
   background:white;box-shadow:0 -6px 28px rgba(184,128,156,.22);
   border-top:2px solid var(--rosa-claro);
   padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
-  transform:translateY(110%);transition:transform .28s ease;
-  border-radius:20px 20px 0 0
+  border-radius:20px 20px 0 0;
+  display:none;                     /* escondida por padrao */
+  transform:translateY(0)
 }
-.barra-selecao.ativa{transform:translateY(0)}
+.barra-selecao.ativa{
+  display:block;
+  animation:subirBarra .25s ease
+}
+@keyframes subirBarra{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .barra-selecao .conteudo{max-width:940px;margin:0 auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .barra-selecao .resumo-sel{flex:1;min-width:150px}
 .barra-selecao .qtd-sel{font-size:.9rem;font-weight:800;color:var(--rosa-escuro)}
@@ -644,7 +649,7 @@ body.tem-selecao{padding-bottom:110px}
   <a href="https://wa.me/5548999589697?text=Ol%C3%A1%21%20Quero%20participar%20das%20a%C3%A7%C3%B5es%20entre%20amigos%20de%20Jenny%20%26%20Luiz%21" target="_blank" rel="noopener">
     <span>&#x1F4AC;</span> Enviar comprovante no WhatsApp
   </a>
-  <div class="sub">D&uacute;vidas? Fale com a gente: (48) 9958-9697</div>
+  <div class="sub">D&uacute;vidas? Fale com a gente: (48) 99958-9697</div>
 </div>
 
 <!-- ============ FOOTER ============ -->
